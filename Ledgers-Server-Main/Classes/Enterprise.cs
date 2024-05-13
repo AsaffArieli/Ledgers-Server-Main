@@ -28,6 +28,20 @@ namespace Ledgers_Server_Main.Classes
             private set { _owners = value; }
         }
 
+        private List<Scheme> _schemes = new List<Scheme>();
+        public List<Scheme> Schemes
+        {
+            get { return _schemes; }
+            private set { _schemes = value; }
+        }
+
+        private List<Parameter> _parameters = new List<Parameter>();
+        public List<Parameter> Parameters
+        {
+            get { return _parameters; }
+            private set { _parameters = value; }
+        }
+
         public Enterprise()
         {
             _id = "1";
@@ -35,6 +49,8 @@ namespace Ledgers_Server_Main.Classes
             _funders = Funder.ReadAll(_mySQL);
             _merchants = Merchant.ReadAll(_mySQL);
             _owners = Owner.ReadAll(_mySQL);
+            _schemes = Scheme.ReadAll(_mySQL);
+            _parameters = Parameter.ReadAllKeys(_mySQL);
         }
 
         public void Insert(Dictionary<string, Dictionary<string, dynamic>[]> data)
@@ -60,6 +76,26 @@ namespace Ledgers_Server_Main.Classes
                 {
                     idDel(data[Config.Tables.MERCHANTS]);
                     _mySQL.Insert(Config.Tables.MERCHANTS, data[Config.Tables.MERCHANTS]);
+                }
+                if (data[Config.Tables.SCHEMES] is not null)
+                {
+                    idDel(data[Config.Tables.SCHEMES]);
+                    var parameters = new List<Dictionary<string, dynamic>>();
+                    foreach (var scheme in data[Config.Tables.SCHEMES])
+                    {
+                        foreach (var parameter in scheme["parameters"])
+                            parameter["scheme_id"] = scheme["id"];
+                        parameters.Add(scheme["parameters"]);
+                        scheme.Remove("parameters");
+                    }
+                    idDel(parameters);
+                    _mySQL.Insert(Config.Tables.SCHEMES, data[Config.Tables.SCHEMES]);
+                    _mySQL.Insert(Config.Tables.PARAMETERS, parameters.ToArray());
+                }
+                if (data[Config.Tables.PARAMETERS] is not null)
+                {
+                    idDel(data[Config.Tables.PARAMETERS]);
+                    _mySQL.Insert(Config.Tables.PARAMETERS, data[Config.Tables.PARAMETERS]);
                 }
                 if (data[Config.Tables.OWNERSHIPS] is not null)
                 {
@@ -96,6 +132,9 @@ namespace Ledgers_Server_Main.Classes
                     break;
                 case Config.Tables.OWNERS:
                     Owners.FirstOrDefault(item => item.Id.Equals(id))?.Delete(_mySQL);
+                    break;
+                case Config.Tables.SCHEMES:
+                    Schemes.FirstOrDefault(item => item.Id.Equals(id))?.Delete(_mySQL);
                     break;
                 default:
                     throw new ArgumentException();

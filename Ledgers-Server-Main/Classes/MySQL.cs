@@ -83,7 +83,7 @@ namespace Ledgers_Server_Main.Classes
 
         public void Insert(string table, Dictionary<string, dynamic>[] items)
         {
-            if (items.Length == 0) throw new ArgumentException();
+            if (items.Length == 0) return;
 
             var columns = string.Join(", ", items[0].Keys.Select(k => $"`{k}`"));
             var values = string.Join(", ", items[0].Keys.Select(k => $"@{k}"));

@@ -66,17 +66,12 @@ namespace Ledgers_Server_Main.Controllers
                 if (id is null) throw new NoNullAllowedException();
 
                 var enterprise = new Enterprise();
-                switch (elements)
-                {
-                    case Config.Tables.FUNDERS:
-                    case Config.Tables.MERCHANTS:
-                    case Config.Tables.OWNERS:
-                        enterprise.Delete(elements, id);
-                        break;
-                    default:
-                        return NotFound();
-                }
+                enterprise.Delete(elements, id);
                 return NoContent();
+            }
+            catch (ArgumentException)
+            {
+                return NotFound();
             }
             catch (Exception ex)
             {

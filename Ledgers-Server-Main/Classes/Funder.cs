@@ -1,5 +1,4 @@
 ﻿using System.Data;
-using System.Dynamic;
 using System.Text.Json;
 using System.Transactions;
 
@@ -11,13 +10,9 @@ namespace Ledgers_Server_Main.Classes
 
         public Funder(MySQL mySQL, string id) : base(id)
         {
-            var where = new Dictionary<string, string[]> { { "id", new string[] { id } } };
-            var data = mySQL.Read(Config.Tables.FUNDERS, where);
-            if (!(data.Rows.Count > 0))
-            {
-                throw new KeyNotFoundException(id);
-            }
-            Init(data.Rows[0]);
+            var data = Read(mySQL, id);
+            if (data is null) { throw new KeyNotFoundException(id); }
+            Init(data);
         }
 
         public Funder(DataRow row) : base(row)
@@ -27,10 +22,8 @@ namespace Ledgers_Server_Main.Classes
 
         private void Init(DataRow row)
         {
-            foreach (DataColumn column in row.Table.Columns)
-            {
-                _data[column.ToString()] = row[column] is DBNull ? null : row[column].ToString();
-            }
+            row.Table.Columns.Cast<DataColumn>().ToList()
+                .ForEach(column => _data[column.ToString()] = row[column]?.ToString());
         }
 
         public void Delete(MySQL mySQL)
@@ -44,27 +37,26 @@ namespace Ledgers_Server_Main.Classes
 
         public dynamic GetJSON()
         {
-            var expando = new ExpandoObject() as IDictionary<string, object?>;
-            foreach (var pair in _data)
-            {
-                expando[new string(pair.Key)] = new string(pair.Value);
-            }
-            return expando;
+            return _data;
         }
 
         public static List<Funder> ReadAll(MySQL mySQL)
         {
-            var funders = new List<Funder>();
-            foreach (DataRow funder in mySQL.Read(Config.Tables.FUNDERS).Rows)
-            {
-                funders.Add(new Funder(funder));
-            }
-            return funders;
+            return mySQL.Read(Config.Tables.FUNDERS).AsEnumerable()
+                .Select<DataRow, Funder>(funder => new Funder(funder))
+                .ToList();
+        }
+
+        private static DataRow? Read(MySQL mySQL, string id)
+        {
+            var where = new Dictionary<string, string[]> { { "id", new string[] { id } } };
+            try { return mySQL.Read(Config.Tables.FUNDERS, where).Rows[0]; }
+            catch (IndexOutOfRangeException) { return null; }
         }
 
         public override string ToString()
         {
-            return JsonSerializer.Serialize(GetJSON());
+            return JsonSerializer.Serialize(_data);
         }
     }
 }

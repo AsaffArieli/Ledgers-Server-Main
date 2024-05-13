@@ -8,6 +8,8 @@
             public const string MERCHANTS = "merchants";
             public const string OWNERS = "owners";
             public const string OWNERSHIPS = "ownerships";
+            public const string SCHEMES = "schemes";
+            public const string PARAMETERS = "parameters";
         }
     }
 }
